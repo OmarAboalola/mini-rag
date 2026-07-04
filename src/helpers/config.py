@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     FILE_MAX_SIZE: int
     FILE_DEFAULT_CHUNK_SIZE: int
 
+    MogoDB_URL: str
+    MogoDB_DB: str
+
     class Config:
         env_file = ".env"
 
