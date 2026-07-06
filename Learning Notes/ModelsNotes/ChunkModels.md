@@ -138,4 +138,9 @@ async def create_chunks(self, chunks: DataChunk):
 def get_chunks_by_project_id(self, project_id: str):
 ```
 
+
+the comment : #this chunk belongs to a specific project , so we have the project_id as a foreign key to the project table
+```
+    chunk_project_id:ObjectId 
+```
 ---
