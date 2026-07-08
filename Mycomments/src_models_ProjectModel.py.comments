@@ -1,0 +1,6 @@
+﻿        #remember when dealing with mongo we use asynico as the motor lib is async, so we need to use await when calling the methods of the motor lib, and we need to use async def when defining the methods of this class
+     #fixes the problem of having an async init method, because we cannot have an async init method, so we use a class method to create an instance of the class and then call the async init method
+     ##check the video for more info: https://youtu.be/iO8FAmUVcjE?si=BmbOifTQX24z2hHU&t=1875
+            # create new project
+        # count total number of documents
+        # calculate total number of pages

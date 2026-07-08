@@ -1,0 +1,11 @@
+﻿# mini-rag
+## The Course
+## Requirements
+#### Install Python using MiniConda
+### (Optional) Setup you command line interface for better readability
+## Installation
+### Install the required packages
+### Setup the environment variables
+## Run Docker Compose Services
+## Run the FastAPI server
+## POSTMAN Collection

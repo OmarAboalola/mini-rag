@@ -17,11 +17,14 @@ class Project(BaseModel):
         arbitrary_types_allowed = True
 
     @classmethod
-    def get_indexes(cls): # the key word self refers to an instance while cls refers to the class itself, so we use cls here because we are defining a class method ( no need to create an instance of the class to use this method)
+    def get_indexes(cls):
+
         return [
-        {
-            "key": [("project_id", 1)],#[...,1] means ascending order, [-1] means descending order
-            "name": "project_id_index_1",
-            "unique": True
-        }
-    ]
+            {
+                "key": [
+                    ("project_id", 1)
+                ],
+                "name": "project_id_index_1",
+                "unique": True
+            }
+        ]
