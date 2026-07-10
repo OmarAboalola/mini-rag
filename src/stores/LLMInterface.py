@@ -14,7 +14,7 @@ class LLMInterface(ABC):
                        temperature: float = None,):
         pass
     @abstractmethod
-    def embedd_text(self, text: str, document_type: str):
+    def embedd_text(self, text: str, document_type: str=None):
         pass
 
     @abstractmethod
