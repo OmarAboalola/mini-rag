@@ -1,7 +1,7 @@
 from ..LLMInterface import LLMInterface
 from openai import OpenAI
 import logging
-from ..LLMEnums import OPENAIModel
+from ..LLMEnums import OpenAIEnums
 
 class OpenAiProvider(LLMInterface):
     def __init__(self, api_key: str,api_url: str = None,
@@ -45,7 +45,7 @@ class OpenAiProvider(LLMInterface):
         max_output_tokens=max_output_tokens if max_output_tokens is not None else self.default_generation_max_output       
         temperature=temperature if temperature is not None else self.default_generation_temperature
 
-        chat_history.append(self.construct_prompt(prompt=prompt, role=OPENAIModel.USER.value))
+        chat_history.append(self.construct_prompt(prompt=prompt, role=OpenAIEnums.USER.value))
 
         response = self.api_client.chat.completions.create(
             model=self.generation_model_id,
