@@ -32,3 +32,7 @@ we can use it for ollama as well , but when passing the key we pass also another
 -         ''' raise NotImplementedError ''' Acts as a  break as well but with a message to the user that this method is not implemented yet.
 
 - '''text[:self.default_input_max_characters].strip()''' . strip is to remove the trailing spaces or /n
+
+- LLMFactoryProvider.py is a file that contain a pattern disgen allowing us to easily create  (choose) a provider from the given provider classes(OpenAIProvider.py,CohereProvider.py,...)
+
+- 
