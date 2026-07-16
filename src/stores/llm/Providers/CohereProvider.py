@@ -18,7 +18,7 @@ class CohereProvider(LLMInterface):
         self.embedding_model_id = None
         self.embedding_size = None
 
-        self.api_client = cohere.Client(api_key=self.api_key)
+        self.api_client = cohere.ClientV2(api_key=self.api_key)
         self.enums=CohereEnums
         self.logger = logging.getLogger(__name__)
 
@@ -35,12 +35,11 @@ class CohereProvider(LLMInterface):
         return text[:self.default_input_max_characters].strip() if len(text) > self.default_input_max_characters else text.strip()
     
     def construct_prompt(self, prompt: str, role: str = None):
-       return {
-           "role": role,
-           "text": self.process_text(prompt)
-       }
-    
-          
+        return {
+            "role": role.lower() if role else "user",
+            "content": self.process_text(prompt)
+        }
+            
     def generate_text(
         self,
         prompt: str,
@@ -69,12 +68,25 @@ class CohereProvider(LLMInterface):
         )
 
         try:
+            messages = []
+
+            # Add previous chat history if available
+            if chat_history:
+                messages.extend(chat_history)
+
+            # Add current user prompt
+            messages.append(
+                {
+                    "role": "user",
+                    "content": self.process_text(prompt),
+                }
+            )
+
             response = self.api_client.chat(
                 model=self.generation_model_id,
-                message=self.process_text(prompt),
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_output_tokens,
-                chat_history=chat_history,
             )
 
             chat_history.append(
@@ -84,11 +96,12 @@ class CohereProvider(LLMInterface):
                 )
             )
 
-            return response.text
+            return response.message.content[0].text
 
         except Exception as e:
             self.logger.exception(e)
             return None
+
 
 
     def embed_text(self, text: str, document_type: str = None):

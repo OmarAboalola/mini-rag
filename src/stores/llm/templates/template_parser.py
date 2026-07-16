@@ -47,9 +47,10 @@ class TemplateParser:
         )
 
         key_attribute = getattr(module, key)
-
-        print(key_attribute)
-        print(type(key_attribute))
+        
+        #debug the types
+        #print(key_attribute)
+        #print(type(key_attribute))
 
         if isinstance(key_attribute, Template):
             return key_attribute.substitute(vars)
