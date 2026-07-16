@@ -1,10 +1,4 @@
-﻿    # validate the file properties
-    #storing the asset record in the database
-        #asset pushed at is automatically set to the current UTC time in the Asset model
-   # _= asset_model.create_asset(asset=asset_resource) _= means a variable that we don't care about, we just want to call the function and not use the return value
-
-
-from fastapi import FastAPI, APIRouter, Depends, UploadFile, status, Request
+﻿from fastapi import FastAPI, APIRouter, Depends, UploadFile, status, Request
 from fastapi.responses import JSONResponse
 import os
 from helpers.config import get_settings, Settings
@@ -29,7 +23,6 @@ data_router = APIRouter(
 @data_router.post("/upload/{project_id}")
 async def upload_data(request: Request, project_id: str, file: UploadFile,
                       app_settings: Settings = Depends(get_settings)):
-        
     
     project_model = await ProjectModel.create_instance(
         db_client=request.app.db_client
@@ -74,6 +67,9 @@ async def upload_data(request: Request, project_id: str, file: UploadFile,
         )
 
     # store the assets into the database
+    #storing the asset record in the database
+        #asset pushed at is automatically set to the current UTC time in the Asset model
+   # _= asset_model.create_asset(asset=asset_resource) _= means a variable that we don't care about, we just want to call the function and not use the return value
     asset_model = await AssetModel.create_instance(
         db_client=request.app.db_client
     )
@@ -88,11 +84,11 @@ async def upload_data(request: Request, project_id: str, file: UploadFile,
     asset_record = await asset_model.create_asset(asset=asset_resource)
 
     return JSONResponse(
-            content={
-                "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-                "file_id": str(asset_record.id),
-            }
-        )
+        content={
+            "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
+            "file_id": str(asset_record.id),
+        }
+    )
 
 @data_router.post("/process/{project_id}")
 async def process_endpoint(request: Request, project_id: str, process_request: ProcessRequest):
@@ -109,11 +105,13 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
         project_id=project_id
     )
 
+    # store the assets into the database
     asset_model = await AssetModel.create_instance(
-            db_client=request.app.db_client
-        )
+        db_client=request.app.db_client
+    )
 
     project_files_ids = {}
+
     if process_request.file_id:
         asset_record = await asset_model.get_asset_record(
             asset_project_id=project.id,
@@ -133,8 +131,6 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
         }
     
     else:
-        
-
         project_files = await asset_model.get_all_project_assets(
             asset_project_id=project.id,
             asset_type=AssetTypeEnum.FILE.value,
@@ -159,8 +155,8 @@ async def process_endpoint(request: Request, project_id: str, process_request: P
     no_files = 0
 
     chunk_model = await ChunkModel.create_instance(
-                        db_client=request.app.db_client
-                    )
+        db_client=request.app.db_client
+    )
 
     if do_reset == 1:
         _ = await chunk_model.delete_chunks_by_project_id(

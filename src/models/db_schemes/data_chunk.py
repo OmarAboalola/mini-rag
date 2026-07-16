@@ -1,7 +1,8 @@
 ﻿#data chunk db table schema
 #this chunk belongs to a specific project , so we have the project_id as a foreign key to the project table
          #pydantic by default does not support ObjectId, 
-         # so we need to allow arbitrary (ignore them)types
+         # so we need to allow arbitrary (ignore them)types
+
 
 
 from pydantic import BaseModel, Field, validator
@@ -30,3 +31,8 @@ class DataChunk(BaseModel):
                 "unique": False
             }
         ]
+    
+class RetrivedDocument(BaseModel):
+    text:str
+    score:float
+

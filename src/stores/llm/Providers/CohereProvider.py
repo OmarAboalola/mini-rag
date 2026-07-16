@@ -19,6 +19,7 @@ class CohereProvider(LLMInterface):
         self.embedding_size = None
 
         self.api_client = cohere.Client(api_key=self.api_key)
+        self.enums=CohereEnums
         self.logger = logging.getLogger(__name__)
 
     
@@ -40,64 +41,89 @@ class CohereProvider(LLMInterface):
        }
     
           
-    def generate_text(self, prompt: str, chat_history: list = [], max_output_tokens: int = None,
-                      temperature: float = None):
-        
+    def generate_text(
+        self,
+        prompt: str,
+        chat_history: list = [],
+        max_output_tokens: int = None,
+        temperature: float = None,
+    ):
         if not self.api_client:
-            self.logger.error("Cohere client is not initialized. Please check your API key.")
+            self.logger.error("Cohere client is not initialized.")
             return None
+
         if not self.generation_model_id:
-            self.logger.error("Generation model is not set. Please set it using set_generation_model")
+            self.logger.error("Generation model is not set.")
             return None
-        
-        response= self.client.chat(
-            model=self.generation_model_id,
-            chat_history = chat_history,
-            message = self.process_text(prompt)
+
+        max_output_tokens = (
+            max_output_tokens
+            if max_output_tokens is not None
+            else self.default_generation_max_output
         )
 
-        max_output_tokens = max_output_tokens if max_output_tokens is not None else self.default_generation_max_output       
-        temperature = temperature if temperature is not None else self.default_generation_temperature
-
-        chat_history.append(self.construct_prompt(prompt=prompt, role=CohereEnums.USER.value))
-
-        response = self.api_client.generate(
-            model=self.generation_model_id,
-            prompt=chat_history,
-            max_tokens=max_output_tokens,
-            temperature=temperature,
-            max_tokens =max_output_tokens,
+        temperature = (
+            temperature
+            if temperature is not None
+            else self.default_generation_temperature
         )
 
-        if not response or not response.text:
-            self.logger.error("Failed to get response from Cohere API.")
+        try:
+            response = self.api_client.chat(
+                model=self.generation_model_id,
+                message=self.process_text(prompt),
+                temperature=temperature,
+                max_tokens=max_output_tokens,
+                chat_history=chat_history,
+            )
+
+            chat_history.append(
+                self.construct_prompt(
+                    prompt=prompt,
+                    role=CohereEnums.USER.value,
+                )
+            )
+
+            return response.text
+
+        except Exception as e:
+            self.logger.exception(e)
             return None
-        return response.text
-    def embedd_text(self, text: str, document_type: str=None):
+
+
+    def embed_text(self, text: str, document_type: str = None):
         if not self.api_client:
-            self.logger.error("Cohere client is not initialized. Please check your API key.")
+            self.logger.error("Cohere client is not initialized.")
             return None
-        
+
         if not self.embedding_model_id:
-            self.logger.error("Embedding model is not set. Please set it using set_embedding_model")
+            self.logger.error("Embedding model is not set.")
             return None
-        
-        input_type = CohereEnums.DOCUMENT
-        if document_type == CohereEnums.QUERY: 
-            input_type = CohereEnums.QUERY
 
-        
-        response = self.api_client.embed(
-            model=self.embedding_model_id,
-            texts=[self.process_text(text)],
-            intput_type=input_type,
-            embedding_types=[float], 
-        )
+        input_type = CohereEnums.DOCUMENT.value
 
-        if not response or not response.embeddings or len(response.embeddings) == 0 or not response.embeddings.float :
-            self.logger.error("Failed to get embedding from Cohere API.")
+        if document_type == CohereEnums.QUERY.value:
+            input_type = CohereEnums.QUERY.value
+
+        try:
+            response = self.api_client.embed(
+                model=self.embedding_model_id,
+                texts=[self.process_text(text)],
+                input_type=input_type,
+                embedding_types=["float"],
+            )
+
+            if (
+                response is None
+                or response.embeddings is None
+                or response.embeddings.float is None
+                or len(response.embeddings.float) == 0
+            ):
+                self.logger.error("Failed to get embedding from Cohere API.")
+                return None
+
+            return response.embeddings.float[0]
+
+        except Exception as e:
+            self.logger.exception(e)
             return None
-        return  response.embeddings.float[0]
-    
-
-    
