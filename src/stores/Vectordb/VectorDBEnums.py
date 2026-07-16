@@ -5,6 +5,6 @@ class VectorDBTypes(Enum):
 
 
 class DistanceMethodEnums(Enum):
-    Cosine = "Cosine"
-    Euclidean = "Euclidean"
-    DotProduct = "DotProduct"
+    COSINE = "Cosine"
+    EUCLID = "Euclidean"
+    DOT = "DotProduct"

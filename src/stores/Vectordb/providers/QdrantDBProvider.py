@@ -1,23 +1,40 @@
 from qdrant_client import QdrantClient , models
 from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnums import VectorDBType , DistanceMethodEnums
+from ..VectorDBEnums import VectorDBTypes , DistanceMethodEnums
 import logging
 from typing import List
+from models.db_schemes import RetrivedDocument
 
 class QdrantDBProvider(VectorDBInterface):
     def __init__(self, db_path:str , distance_method: str):
         self.client = None
         self.db_path = db_path
         self.distance_method = distance_method
-
-        if self.distance_method == DistanceMethodEnums.Cosine.value:
+        method = (distance_method or "").strip().lower()
+        '''
+        if self.distance_method == DistanceMethodEnums.COSINE.value:
             self.distance_method = models.Distance.COSINE
-        elif self.distance_method == DistanceMethodEnums.Euclidean.value:
-            self.distance_method = models.Distance.EUCLIDEAN   
-        elif self.distance_method == DistanceMethodEnums.DotProduct.value:
+        elif self.distance_method == DistanceMethodEnums.EUCLID.value:
+            self.distance_method = models.Distance.EUCLID
+        elif self.distance_method == DistanceMethodEnums.DOT.value:
             self.distance_method = models.Distance.DOT
+        '''
 
-        logger = logging.getLogger(__name__)
+
+        #hard coded as I had some errors
+        if method == "cosine":
+            self.distance_method = models.Distance.COSINE
+        elif method in ("euclidean", "euclid"):
+            self.distance_method = models.Distance.EUCLID
+        elif method in ("dot", "dotproduct"):
+            self.distance_method = models.Distance.DOT
+        else:
+            raise ValueError(f"Unsupported distance method: {distance_method}")
+        #to debug
+        print(self.distance_method)
+        print(type(self.distance_method))
+
+        self.logger = logging.getLogger(__name__)
 
     def connect(self):
         self.client = QdrantClient(path=self.db_path)
@@ -41,6 +58,8 @@ class QdrantDBProvider(VectorDBInterface):
             _=self.delete_collection(collection_name)
 
         if not self.is_collection_exists(collection_name):
+            print("distance_method =", self.distance_method)
+            print("type =", type(self.distance_method))
             _=self.client.recreate_collection(
                 collection_name=collection_name,
                 vectors_config=models.VectorParams( #the pars are taken from the documentation of qdrant
@@ -80,26 +99,32 @@ class QdrantDBProvider(VectorDBInterface):
         return True
 
 
-    def insert_many(self, collection_name: str, text: list, vector: list,
-                         metadata: list , record_id: list = None, batch_size: int = 100):
+    def insert_many(self,collection_name: str,texts: list,
+    vectors: list,
+    metadata: list,
+    record_ids: list = None,
+    batch_size: int = 100,
+):
         if metadata  is None: #explained in my notes
-            metadata = [None] * len(text)
+            metadata = [None] * len(texts)
 
-        if record_id is None:
-            record_id = [None] * len(text)
+        if record_ids is None:
+            record_ids = [None] * len(texts)
 
         # Implementation for inserting many records
-        for i in range(0, len(text), batch_size):
-            batch_end=i+batch_size #i + batch_size is the last index we have reached in the loop, so we take the slice from i to i + batch_size
-            batch_text = text[i:batch_end] 
-            batch_vector = vector[i:batch_end]
+        for i in range(0, len(texts), batch_size):
+            #i + batch_size is the last index we have reached in the loop, so we take the slice from i to i + batch_size
+            batch_end=i+batch_size 
+            batch_text = texts[i:batch_end] 
+            batch_vector = vectors[i:batch_end]
             batch_metadata = metadata[i:batch_end]
-        #    batch_record_id = record_id[i:batch_end]
+            batch_record_ids = record_ids[i:batch_end]
 
 
 
             records = [
                 models.Record(
+                    id=batch_record_ids[j],
                     vector=batch_vector[j],
                     payload={
                         "text": batch_text[j],
@@ -119,8 +144,16 @@ class QdrantDBProvider(VectorDBInterface):
         return True
 
     def search_by_vector(self, collection_name: str, vector: list, top_k: int = 5):
-        return self.client.search(
+        results = self.client.search(
             collection_name=collection_name,
             query_vector=vector,
             limit=top_k
         )
+        if not results or len(results)==0:
+            return None
+        else :
+            return[
+                RetrivedDocument(**{"score":result.score, #pydantic to retun those only
+                                    "text":result.payload["text"]})
+                for result in results
+            ]
