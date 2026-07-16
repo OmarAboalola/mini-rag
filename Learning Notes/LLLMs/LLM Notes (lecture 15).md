@@ -34,5 +34,13 @@ we can use it for ollama as well , but when passing the key we pass also another
 - '''text[:self.default_input_max_characters].strip()''' . strip is to remove the trailing spaces or /n
 
 - LLMFactoryProvider.py is a file that contain a pattern disgen allowing us to easily create  (choose) a provider from the given provider classes(OpenAIProvider.py,CohereProvider.py,...)
+#===================================LECTURE 16===============================
 
-- 
+- Forces the output to be dict(used to convert any object to json)
+'''
+        return json.loads(
+            json.dumps(collection_info, default=lambda x: x.__dict__)
+        )
+  '''  
+
+-  Locales are a way to define language-specific resources (such as templates, messages, labels, and prompts) without hard-coding them in the application code. The locales folder should have the same structure and keys for every supported language. Each language file should contain the same entries, with only the translated values changing.
