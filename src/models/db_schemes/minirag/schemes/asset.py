@@ -23,6 +23,7 @@ class Asset (SQLAlchemyBase):
 
     #we have the model (table) called project , we will take from it data to put into assets
     project = relationship("Project",back_populates="assets")
+    chunks = relationship("DataChunk", back_populates="asset")
 
     
     created_at=Column(DateTime(timezone=True) , server_default=func.now() , nullable=False) #auto add it if not found and cannot be null
