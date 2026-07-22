@@ -132,12 +132,12 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     
     else:
         project_files = await asset_model.get_all_project_assets(
-            asset_project_id=project.asset_id,
+            asset_project_id=project.project_id,
             asset_type=AssetTypeEnum.FILE.value,
         )
 
         project_files_ids = {
-            record.record_id: record.asset_name
+            record.asset_id: record.asset_name
             for record in project_files
         }
 
