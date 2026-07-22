@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from routes import base, data, nlp
-from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from stores.LLM.LLMProviderFactory import LLMPROVIDERFACTORY
 from stores.Vectordb.VectorDBProviderFactory import VectorDBProviderFactory
@@ -47,7 +46,6 @@ async def startup_span():
 
     
 async def shutdown_span():
-    app.mongo_conn.close()
     app.vectordb_client.disconnect()
 
 app.on_event("startup")(startup_span)
