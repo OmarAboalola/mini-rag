@@ -61,4 +61,4 @@ if its created :
 
 - after alembic changes the database it keeps a copy of the older one(same as most migration tools)
 
-- 
+- in alchemy we commit (when writing info) and we (excute when returnig an info) after a certain query
