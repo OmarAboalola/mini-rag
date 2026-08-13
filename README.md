@@ -2,7 +2,7 @@
 
 A RAG pipeline — upload documents, chunk them, embed them, query them. Built with FastAPI and Postgres/pgvector.
 
-Migrated the data layer from MongoDB to PostgreSQL + pgvector, added a provider-factory architecture so the LLM and vector DB backends are swappable, and wired up Alembic migrations. Full write-up of what I learned along the way is in the [learning notes](#learning-notes) below.
+Started as MongoDB, moved it to PostgreSQL + pgvector, added Alembic migrations. LLM and vector DB providers are swappable via a factory pattern. More in my [learning notes](#learning-notes).
 
 ## What it does
 
