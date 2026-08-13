@@ -1,8 +1,8 @@
 # mini-RAG
 
-A Retrieval-Augmented Generation (RAG) backend built with FastAPI — upload documents, chunk and embed them, store the vectors, and ask questions grounded in your own data.
+A RAG pipeline — upload documents, chunk them, embed them, query them. Built with FastAPI and Postgres/pgvector.
 
-I built this by following [Abu Bakr Soliman's mini-rag course](https://youtube.com/playlist?list=PLvLvlVqNQGHCUR2p0b8a0QpVjDUg50wQj), then kept extending it on my own: migrated the data layer from MongoDB to PostgreSQL + pgvector, added a provider-factory architecture so the LLM and vector DB backends are swappable, and wired up Alembic migrations. Full write-up of what I learned along the way is in the [learning notes](#learning-notes) below.
+Migrated the data layer from MongoDB to PostgreSQL + pgvector, added a provider-factory architecture so the LLM and vector DB backends are swappable, and wired up Alembic migrations. Full write-up of what I learned along the way is in the [learning notes](#learning-notes) below.
 
 ## What it does
 
