@@ -1,4 +1,6 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from typing import List, Optional
+
 
 class Settings(BaseSettings):
 
@@ -23,17 +25,22 @@ class Settings(BaseSettings):
     OPENAI_API_URL: str
     COHERE_API_KEY: str
 
-    GENERATION_MODEL_ID: str 
+    GENERATION_MODEL_ID_LITREAL: Optional[List[str]] = None
+    GENERATION_MODEL_ID_LITERAL: Optional[List[str]] = None
+    GENERATION_MODEL_ID: str
     EMBEDDING_MODEL_ID: str
     
     EMBEDDING_MODEL_SIZE: int = None
     INPUT_DEFAULT_MAX_CHARACTERS: int = None
     GENERATION_DEFAULT_MAX_TOKENS: int = None
     GENERATION_DEFAULT_TEMPERATURE: float = None
-    
+
+    VECTOR_DB_BACKEND_LITREAL: Optional[List[str]] = None
+    VECTOR_DB_BACKEND_LITERAL: Optional[List[str]] = None
     VECTOR_DB_BACKEND: str
     VECTOR_DB_PATH: str
     VECTOR_DB_DISTANCE_METHOD: str = None
+    VECTOR_DB_PGVEC_INDEX_THRESHOLD: int = 100
 
 
     PRIMARY_LANG:str="en"

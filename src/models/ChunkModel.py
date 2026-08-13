@@ -1,7 +1,7 @@
 from .BaseDataModel import BaseDataModel
 from .db_schemes import DataChunk
 from sqlalchemy.future import select
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 
 class ChunkModel(BaseDataModel):
 
@@ -53,3 +53,12 @@ class ChunkModel(BaseDataModel):
             result = await session.execute(stmt)
             records = result.scalars().all()
         return records
+
+    async def get_total_chunks_count(self, project_id: int):
+        async with self.db_client() as session:
+            result = await session.execute(
+                select(func.count(DataChunk.chunk_id)).where(
+                    DataChunk.chunk_project_id == project_id
+                )
+            )
+            return result.scalar_one()

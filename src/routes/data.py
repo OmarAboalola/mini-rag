@@ -12,6 +12,7 @@ from models.ChunkModel import ChunkModel
 from models.AssetModel import AssetModel
 from models.db_schemes import DataChunk, Asset
 from models.enums.AssetTypeEnum import AssetTypeEnum
+from controllers.NLPController import NLPController
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -86,7 +87,7 @@ async def upload_data(request: Request, project_id: int, file: UploadFile,
     return JSONResponse(
         content={
             "signal": ResponseSignal.FILE_UPLOAD_SUCCESS.value,
-            "file_id": str(asset_record.asset_id),
+            "file_id": asset_record.asset_name,
         }
     )
 
@@ -103,6 +104,13 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
 
     project = await project_model.get_project_or_create_one(
         project_id=project_id
+    )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
     )
 
     # store the assets into the database
@@ -159,6 +167,7 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     )
 
     if do_reset == 1:
+        await nlp_controller.reset_vector_db_collection(project=project)
         _ = await chunk_model.delete_chunks_by_project_id(
             project_id=project.project_id
         )

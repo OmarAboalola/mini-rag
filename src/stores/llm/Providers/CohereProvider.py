@@ -1,7 +1,8 @@
 from ..LLMInterface import LLMInterface
-from ..LLMEnums import CohereEnums
+from ..LLMEnums import CohereEnums, DocumentTypeEnum
 import cohere
 import logging
+from typing import List, Union
 
 class CohereProvider(LLMInterface):
     def __init__(self, api_key: str,
@@ -104,7 +105,9 @@ class CohereProvider(LLMInterface):
 
 
 
-    def embed_text(self, text: str, document_type: str = None):
+    def embed_text(
+        self, text: Union[str, List[str]], document_type: str = None
+    ):
         if not self.api_client:
             self.logger.error("Cohere client is not initialized.")
             return None
@@ -113,15 +116,18 @@ class CohereProvider(LLMInterface):
             self.logger.error("Embedding model is not set.")
             return None
 
+        if isinstance(text, str):
+            text = [text]
+
         input_type = CohereEnums.DOCUMENT.value
 
-        if document_type == CohereEnums.QUERY.value:
+        if document_type in (DocumentTypeEnum.QUERY.value, CohereEnums.QUERY.value):
             input_type = CohereEnums.QUERY.value
 
         try:
             response = self.api_client.embed(
                 model=self.embedding_model_id,
-                texts=[self.process_text(text)],
+                texts=[self.process_text(item) for item in text],
                 input_type=input_type,
                 embedding_types=["float"],
             )
@@ -135,7 +141,7 @@ class CohereProvider(LLMInterface):
                 self.logger.error("Failed to get embedding from Cohere API.")
                 return None
 
-            return response.embeddings.float[0]
+            return list(response.embeddings.float)
 
         except Exception as e:
             self.logger.exception(e)
