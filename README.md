@@ -88,4 +88,5 @@ I write up notes as I build things, comment by comment — controllers, models, 
 
 ## Acknowledgements
 
-Originally based on [Abu Bakr Soliman's mini-rag course](https://youtube.com/playlist?list=PLvLvlVqNQGHCUR2p0b8a0QpVjDUg50wQj) — a great starting point for learning RAG fundamentals. See [LICENSE](./LICENSE) for details.
+Originally based on [Abu Bakr Soliman's mini-rag course](https://youtube.com/playlist?list=PLvLvlVqNQGHCUR2p0b8a0QpVjDUg50wQj) 
+See [LICENSE](./LICENSE) for details.
