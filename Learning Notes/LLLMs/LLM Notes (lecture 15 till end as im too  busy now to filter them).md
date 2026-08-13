@@ -44,3 +44,21 @@ we can use it for ollama as well , but when passing the key we pass also another
   '''  
 
 -  Locales are a way to define language-specific resources (such as templates, messages, labels, and prompts) without hard-coding them in the application code. The locales folder should have the same structure and keys for every supported language. Each language file should contain the same entries, with only the translated values changing.
+
+- sql alkeny is a lib used to deal with sql in python
+
+- uui : universally unique id ; a random number used for Id as production instead of ecrimenting the id each time to hide how many projects are there.
+
+- jsonB: json binary ; normal json is stored as a string when needing it its converted into json object in the memory then returning it (high latency in reading) while jsonB is stored into binary instead of string(high latency in writing)
+
+- Indexing in SQL is made to make searching faster. Instead of doing a linear search **O(n)** by iterating through the whole table to find a specific row, we use an index. You can imagine an index as a sorted data structure (trees usually )that contains pointers showing exactly where a specific element is located. So instead of scanning the entire table, the database follows these pointers to directly find the required data, making queries much faster O(log n).
+
+- Data migration is the process of moving data from one system, storage location, or format to another while preserving its accuracy, completeness, and usability.
+
+- alembic is a data migration tool that automatically checks for the db , if the db bas table is not created then: it create one 
+if its created : 
+    make sure it follows the pydantic scheme
+
+- after alembic changes the database it keeps a copy of the older one(same as most migration tools)
+
+- in alchemy we commit (when writing info) and we (excute when returnig an info) after a certain query

@@ -1,16 +1,27 @@
-from qdrant_client import QdrantClient , models
-from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnums import VectorDBTypes , DistanceMethodEnums
 import logging
+import uuid
 from typing import List
-from models.db_schemes import RetrivedDocument
+
+from qdrant_client import QdrantClient, models
+
+from models.db_schemes import RetrievedDocument
+from ..VectorDBEnums import DistanceMethodEnums
+from ..VectorDBInterface import VectorDBInterface
+
 
 class QdrantDBProvider(VectorDBInterface):
-    def __init__(self, db_path:str , distance_method: str):
+    def __init__(
+        self,
+        db_path: str,
+        distance_method: str,
+        default_vector_size: int = 768,
+    ):
         self.client = None
         self.db_path = db_path
-        self.distance_method = distance_method
-        method = (distance_method or "").strip().lower()
+        self.default_vector_size = default_vector_size or 768
+        self.collection_prefix = "collection"
+
+        normalized_method = (distance_method or "").strip().lower()
         '''
         if self.distance_method == DistanceMethodEnums.COSINE.value:
             self.distance_method = models.Distance.COSINE
@@ -20,140 +31,162 @@ class QdrantDBProvider(VectorDBInterface):
             self.distance_method = models.Distance.DOT
         '''
 
-
         #hard coded as I had some errors
-        if method == "cosine":
-            self.distance_method = models.Distance.COSINE
-        elif method in ("euclidean", "euclid"):
-            self.distance_method = models.Distance.EUCLID
-        elif method in ("dot", "dotproduct"):
-            self.distance_method = models.Distance.DOT
-        else:
+        distance_mapping = {
+            DistanceMethodEnums.COSINE.value.lower(): models.Distance.COSINE,
+            "cosine": models.Distance.COSINE,
+            DistanceMethodEnums.EUCLID.value.lower(): models.Distance.EUCLID,
+            "euclid": models.Distance.EUCLID,
+            "l2": models.Distance.EUCLID,
+            DistanceMethodEnums.DOT.value.lower(): models.Distance.DOT,
+            "dot": models.Distance.DOT,
+        }
+        if normalized_method not in distance_mapping:
             raise ValueError(f"Unsupported distance method: {distance_method}")
+        self.distance_method = distance_mapping[normalized_method]
+
         #to debug
-        print(self.distance_method)
-        print(type(self.distance_method))
+        self.logger = logging.getLogger("uvicorn.error")
 
-        self.logger = logging.getLogger(__name__)
-
-    def connect(self):
+    async def connect(self):
         self.client = QdrantClient(path=self.db_path)
 
-    def disconnect(self):
+    async def disconnect(self):
+        if self.client and hasattr(self.client, "close"):
+            self.client.close()
         self.client = None
 
-    def is_collection_exists(self, collection_name: str) -> bool:
-        return self.client.collection_exists(collection_name)
+    async def is_collection_exists(self, collection_name: str) -> bool:
+        return self.client.collection_exists(collection_name=collection_name)
 
-    def list_all_collections(self) -> List:
+    async def list_all_collections(self) -> List:
         return self.client.get_collections()
 
-    def get_collection_info(self, collection_name: str) -> dict:
+    async def get_collection_info(self, collection_name: str) -> dict:
         return self.client.get_collection(collection_name=collection_name)
-    
-    def create_collection(self, collection_name: str,
-                           embedding_size: int, 
-                           do_reset: bool = False):
-        if do_reset and self.is_collection_exists(collection_name):
-            _=self.delete_collection(collection_name)
 
-        if not self.is_collection_exists(collection_name):
-            print("distance_method =", self.distance_method)
-            print("type =", type(self.distance_method))
-            _=self.client.recreate_collection(
-                collection_name=collection_name,
-                vectors_config=models.VectorParams( #the pars are taken from the documentation of qdrant
-                                size=embedding_size,
-                                distance=self.distance_method)
-            )
-            return True
-        return False    
-
-    def delete_collection(self, collection_name: str):
-        if self.is_collection_exists(collection_name):
+    async def delete_collection(self, collection_name: str):
+        if await self.is_collection_exists(collection_name):
+            self.logger.info("Deleting vector collection: %s", collection_name)
             return self.client.delete_collection(collection_name=collection_name)
+        return True
 
-    def insert_one(self, collection_name: str, text: str, vector: list,
-                         metadata: dict = None, record_id: str = None):
-        
-        if not self.is_collection_exists(collection_name):
-        #   raise ValueError(f"Collection '{collection_name}' does not exist.")
-            self.logger.error(f"Collection '{collection_name}' does not exist.")
+    async def create_collection(
+        self,
+        collection_name: str,
+        embedding_size: int,
+        do_reset: bool = False,
+    ):
+        if do_reset:
+            await self.delete_collection(collection_name)
+
+        if await self.is_collection_exists(collection_name):
             return False
+
+        self.logger.info("Creating Qdrant collection: %s", collection_name)
+        return self.client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams( #the pars are taken from the documentation of qdrant
+                size=embedding_size or self.default_vector_size,
+                distance=self.distance_method,
+            ),
+        )
+
+    async def insert_one(
+        self,
+        collection_name: str,
+        text: str,
+        vector: list,
+        metadata: dict = None,
+        record_id: str = None,
+    ):
+        if not await self.is_collection_exists(collection_name):
+            #   raise ValueError(f"Collection '{collection_name}' does not exist.")
+            self.logger.error("Vector collection does not exist: %s", collection_name)
+            return False
+
         try:
             self.client.upload_records(
                 collection_name=collection_name,
                 records=[
                     models.Record(
+                        id=record_id if record_id is not None else str(uuid.uuid4()),
                         vector=vector,
-                        payload={
-                            "text": text, 
-                            "metadata": metadata
-                            }
+                        payload={"text": text, "metadata": metadata},
                     )
-                ]
+                ],
             )
-        except Exception as e:
-            self.logger.error(f"Error occurred while uploading record: {e}")
+        except Exception:
+            self.logger.exception("Failed to upload a Qdrant record")
             return False
         return True
 
+    async def insert_many(
+        self,
+        collection_name: str,
+        texts: list,
+        vectors: list,
+        metadata: list = None,
+        record_ids: list = None,
+        batch_size: int = 100,
+    ):
+        if not await self.is_collection_exists(collection_name):
+            self.logger.error("Vector collection does not exist: %s", collection_name)
+            return False
 
-    def insert_many(self,collection_name: str,texts: list,
-    vectors: list,
-    metadata: list,
-    record_ids: list = None,
-    batch_size: int = 100,
-):
-        if metadata  is None: #explained in my notes
-            metadata = [None] * len(texts)
-
+        item_count = len(texts)
+        if len(vectors) != item_count:
+            self.logger.error("Texts and vectors must have equal lengths")
+            return False
+        if metadata is None: #explained in my notes
+            metadata = [None] * item_count
         if record_ids is None:
-            record_ids = [None] * len(texts)
+            record_ids = [str(uuid.uuid4()) for _ in texts]
+        if len(metadata) != item_count or len(record_ids) != item_count:
+            self.logger.error("Vector record fields must have equal lengths")
+            return False
 
         # Implementation for inserting many records
-        for i in range(0, len(texts), batch_size):
+        batch_size = max(1, int(batch_size))
+        for start in range(0, item_count, batch_size):
             #i + batch_size is the last index we have reached in the loop, so we take the slice from i to i + batch_size
-            batch_end=i+batch_size 
-            batch_text = texts[i:batch_end] 
-            batch_vector = vectors[i:batch_end]
-            batch_metadata = metadata[i:batch_end]
-            batch_record_ids = record_ids[i:batch_end]
-
-
-
+            end = start + batch_size
             records = [
                 models.Record(
-                    id=batch_record_ids[j],
-                    vector=batch_vector[j],
-                    payload={
-                        "text": batch_text[j],
-                        "metadata": batch_metadata[j]
-                    }
+                    id=record_id,
+                    vector=vector,
+                    payload={"text": text, "metadata": item_metadata},
                 )
-                for j in range(len(batch_text))
+                for text, vector, item_metadata, record_id in zip(
+                    texts[start:end],
+                    vectors[start:end],
+                    metadata[start:end],
+                    record_ids[start:end],
+                )
             ]
             try:
                 self.client.upload_records(
-                        collection_name=collection_name,
-                        records=records,
-                    )
-            except Exception as e:
-                self.logger.error(f"Error occurred while uploading records: {e}")
+                    collection_name=collection_name,
+                    records=records,
+                )
+            except Exception:
+                self.logger.exception("Failed to upload Qdrant records")
                 return False
         return True
 
-    def search_by_vector(self, collection_name: str, vector: list, top_k: int = 5):
+    async def search_by_vector(
+        self, collection_name: str, vector: list, limit: int = 5
+    ):
         results = self.client.search(
             collection_name=collection_name,
             query_vector=vector,
-            limit=top_k
+            limit=limit,
         )
-        if not results or len(results)==0:
+        if not results:
             return None
-        else :
-            return[
-                RetrivedDocument(**{"score":result.score, #pydantic to retun those only
-                                    "text":result.payload["text"]})
-                for result in results
-            ]
+
+        return [
+            RetrievedDocument(score=result.score, #pydantic to retun those only
+                              text=result.payload["text"])
+            for result in results
+        ]
