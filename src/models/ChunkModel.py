@@ -33,11 +33,11 @@ class ChunkModel(BaseDataModel):
     async def insert_many_chunks(self, chunks: list, batch_size: int=100):
 
         async with self.db_client() as session:
-            async with session.begin():
-                for i in range(0, len(chunks), batch_size):
-                    batch = chunks[i:i+batch_size]
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i+batch_size]
+                async with session.begin():  # fixed: commit moved inside the loop, one commit per batch
                     session.add_all(batch)
-            await session.commit() #1 commit = 1 big batch so its not quite correct logic so to mirror mongo this should be inside the loop ig?
+                    #await session.commit() #1 commit = 1 big batch so its not quite correct logic so to mirror mongo this should be inside the loop ig?
         return len(chunks)
 
     async def delete_chunks_by_project_id(self, project_id: int):
